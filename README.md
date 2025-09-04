@@ -14,14 +14,18 @@ The folder contains two datasets for the sake of illustration:
 * shapefile (position and limits of the starting areas)
 Change with your own files if needed.
 
+An optional file (profil.shp) is provided for plotting cross-sections.
 
-# Caveat
+For the moment, you can select the language (Franch/English) for customizing figure captions. In progress...
+
+## Caveat
 The main problem is usually the compiler parameters. Check lines 24 and 25 of Makefile and change if needed:
+
 	FFLAGS ?= -O2 -fopenmp
 	OMP_NUM_THREADS = 8
 
 
-# History of changes
+## History of changes
 Last update 30 Aug 2025
 * change of qinit_module.f90
 * change of AVAC.ipynb: inclusion of a profile for plotting cross-sections
