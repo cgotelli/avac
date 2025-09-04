@@ -1,0 +1,39 @@
+animation:
+  n_out: 90
+  variable: depth
+computation:
+  boundary: extrap
+  cfl_max: 1
+  cfl_target: 0.5
+  domain_cell: 2
+  dry_limit: 0.01
+  max_iter: 100000
+  nb_simul: 30
+  output_directory: _output
+  refinement: 1
+  t_max: 90
+date:
+  date: 2025-08-30 15:37:49.396541
+output:
+  delta_t: 1
+  output_format: binary32
+  verbosity: 0
+release:
+  correction_elevation: true
+  correction_slope: true
+  d0: 1.77
+  gradient_hypso: 0.03
+  nu: 0.2
+  period_return: 300
+  theta_cr: 30
+  z_ref: 2000
+rheology:
+  beta: 1.1
+  model: Voellmy
+  mu: 0.2
+  rho: 300
+  u_cr: 0.1
+  xi: 1800
+topography:
+  dem: topo1m.asc
+  starting_areas: ZA.shp
