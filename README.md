@@ -30,3 +30,53 @@ Last update 30 Aug 2025
 * change of qinit_module.f90
 * change of AVAC.ipynb: inclusion of a profile for plotting cross-sections
 
+
+## AVAC Desktop GUI (new)
+
+A cross-platform desktop GUI is now included to replace the notebook-driven flow with a guided 5-step workflow.
+
+### Features implemented
+
+- 5-tab wizard:
+  1. **Project Setup**: project folder, language, environment checks, AVAC file extraction, local Clawpack install
+  2. **Input Data**: DEM and shapefile selection, metadata validation, map preview with hillshade/slope overlays
+  3. **Parameters**: grouped release/rheology/computation/output controls, YAML load/save, validation, initial depth preview
+  4. **Run Simulation**: run `make clean && make .output`, stream logs live, stop run, monitor progress
+  5. **Results & Analysis**: max map display/export, profile loading, statistics, animation file launcher, time-series placeholder
+
+- Portability helpers:
+  - `scripts/bootstrap_local_env.sh`
+  - `environment.yml`
+  - `launch.bat` (Windows -> WSL launcher)
+  - `Dockerfile`
+
+### Run the GUI
+
+From the repository root:
+
+```bash
+python3 -m venv env
+source env/bin/activate
+pip install -r requirements-gui.txt
+python avac_gui.py
+```
+
+Or use:
+
+```bash
+./scripts/bootstrap_local_env.sh
+source env/bin/activate
+python avac_gui.py
+```
+
+### Windows (WSL)
+
+- Install WSL and an Ubuntu distribution
+- Open command prompt in the repository folder and run `launch.bat`
+- The launcher starts the GUI through WSL Python
+
+### Notes
+
+- Local Clawpack setup uses `clawpack-v5.14.0.zip` from this repository
+- AVAC solver files are extracted from `files.tar.gz` into the selected project folder
+- For headless/container runs, adapt Docker settings for display forwarding as needed

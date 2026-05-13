@@ -1,0 +1,16 @@
+name: avac-gui
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip
+  - gfortran
+  - make
+  - numpy
+  - matplotlib
+  - pyyaml
+  - pyqt
+  - geopandas
+  - shapely
+  - pip:
+      - -r requirements-gui.txt

@@ -1,0 +1,1 @@
+"""AVAC desktop GUI package."""
