@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import sys
@@ -138,6 +139,21 @@ def extract_avac_files(archive: Path, target_dir: Path) -> None:
 
 
 def install_clawpack_from_zip(zip_path: Path, project_dir: Path, timeout: int = 3600) -> tuple[int, str]:
+    """Install clawpack from the bundled zip into project-local vendor source.
+
+    The default timeout is 3600 seconds because editable installation and build
+    steps can be lengthy on first run (compile + dependency resolution). If the
+    timeout is exceeded, subprocess.run raises TimeoutExpired to signal that setup
+    did not finish within the expected bound.
+    Set AVAC_CLAW_INSTALL_TIMEOUT to override timeout without changing code.
+    Args:
+        timeout: Installation timeout in seconds.
+
+    Returns:
+        tuple[int, str]: (return_code, combined_stdout_stderr_log)
+    """
+    effective_timeout = int(os.environ.get("AVAC_CLAW_INSTALL_TIMEOUT", timeout))
+
     zip_path = Path(zip_path)
     project_dir = Path(project_dir)
     vendor = project_dir / ".vendor"
@@ -157,7 +173,7 @@ def install_clawpack_from_zip(zip_path: Path, project_dir: Path, timeout: int = 
         extracted[0].rename(src_root)
 
     cmd = [sys.executable, "-m", "pip", "install", "-e", str(src_root)]
-    proc = subprocess.run(cmd, cwd=project_dir, capture_output=True, text=True, timeout=timeout, check=False)
+    proc = subprocess.run(cmd, cwd=project_dir, capture_output=True, text=True, timeout=effective_timeout, check=False)
     output = (proc.stdout or "") + "\n" + (proc.stderr or "")
     return proc.returncode, output
 

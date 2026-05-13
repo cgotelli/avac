@@ -35,12 +35,20 @@ except Exception:  # noqa: BLE001
     gpd = None
     MplPath = None
 
+# Empirical scaling factor used for rough runtime estimates:
+# proxy_minutes ~= (ncols * nrows * t_max * refinement) / RUNTIME_PROXY_SCALING_FACTOR.
+# Derived from informal AVAC notebook runs on mid-range laptops with demo-sized DEMs.
+# This is only an order-of-magnitude indicator (not a benchmark-grade predictor).
+# Units: (grid_cells * simulated_seconds * refinement_level) / minute.
+RUNTIME_PROXY_SCALING_FACTOR = 2.5e7
+
 
 class ParametersTab(QWidget):
     def __init__(self, state: AppState):
         super().__init__()
         self.state = state
         self.widgets: dict[str, QWidget] = {}
+        self.integer_combo_fields = {"release.period_return"}
 
         root = QVBoxLayout(self)
         top_row = QHBoxLayout()
@@ -285,7 +293,7 @@ class ParametersTab(QWidget):
                 params[group][key] = bool(widget.isChecked())
             elif isinstance(widget, QComboBox):
                 text = widget.currentText()
-                params[group][key] = int(text) if key == "period_return" else text
+                params[group][key] = int(text) if full_key in self.integer_combo_fields else text
         self.state.update_parameters(params)
         self.update_runtime_estimate()
         self.draw_initial_preview()
@@ -296,7 +304,7 @@ class ParametersTab(QWidget):
         nrows = self.state.dem_metadata.get("nrows", 1000)
         t_max = comp.get("t_max", 90)
         refinement = comp.get("refinement", 1)
-        proxy = (ncols * nrows * t_max * refinement) / 2.5e7
+        proxy = (ncols * nrows * t_max * refinement) / RUNTIME_PROXY_SCALING_FACTOR
         self.widgets["computation.runtime_estimate"].setText(f"Estimated runtime (rough): {proxy:0.1f} minutes")
 
     def load_yaml(self) -> None:

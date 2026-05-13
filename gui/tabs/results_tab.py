@@ -26,6 +26,11 @@ from gui.services import read_ascii_raster
 from gui.state import AppState
 
 
+def create_empty_raster_tuple() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Fallback tuple matching (x, y, z) structure used by loaded_rasters."""
+    return np.array([]), np.array([]), np.array([np.nan])
+
+
 class ResultsTab(QWidget):
     def __init__(self, state: AppState):
         super().__init__()
@@ -177,7 +182,7 @@ class ResultsTab(QWidget):
         x, y, z = self.loaded_rasters[key]
         ncols = z.shape[1]
         nrows = z.shape[0]
-        cellsize = (x[-1] - x[0]) / max(1, ncols - 1)
+        cellsize = (x[-1] - x[0]) / max(1, x.shape[0] - 1)
         header = [
             f"ncols {ncols}",
             f"nrows {nrows}",
@@ -208,9 +213,9 @@ class ResultsTab(QWidget):
 
     def refresh_stats(self) -> None:
         values = {
-            "Max depth": np.nanmax(self.loaded_rasters.get("depth", (None, None, np.array([np.nan])))[2]),
-            "Max velocity": np.nanmax(self.loaded_rasters.get("velocity", (None, None, np.array([np.nan])))[2]),
-            "Max pressure": np.nanmax(self.loaded_rasters.get("pressure", (None, None, np.array([np.nan])))[2]),
+            "Max depth": np.nanmax(self.loaded_rasters.get("depth", create_empty_raster_tuple())[2]),
+            "Max velocity": np.nanmax(self.loaded_rasters.get("velocity", create_empty_raster_tuple())[2]),
+            "Max pressure": np.nanmax(self.loaded_rasters.get("pressure", create_empty_raster_tuple())[2]),
             "Runout elevation": np.nan,
             "Mobilized area": np.nan,
         }

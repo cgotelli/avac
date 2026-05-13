@@ -90,14 +90,20 @@ class RunSimulationTab(QWidget):
         self.stop_btn.setEnabled(True)
 
         env = os.environ.copy()
-        env["CLAW"] = str((self.state.project_dir / ".vendor" / "clawpack-src").resolve()) if (self.state.project_dir / ".vendor" / "clawpack-src").exists() else env.get("CLAW", "")
+        local_claw_path = (self.state.project_dir / ".vendor" / "clawpack-src").resolve()
+        if local_claw_path.exists():
+            env["CLAW"] = str(local_claw_path)
+        else:
+            env["CLAW"] = env.get("CLAW", "")
 
         self.process.setWorkingDirectory(str(self.state.project_dir))
-        self.process.setProcessEnvironment(self.processEnvironmentFromDict(env))
-        self.process.start("bash", ["-lc", "make clean && make .output"])
+        self.process.setProcessEnvironment(self.process_environment_from_dict(env))
+        # Requires a POSIX-compatible shell that supports `-lc`.
+        shell = os.environ.get("SHELL", "/bin/sh")
+        self.process.start(shell, ["-lc", "make clean && make .output"])
         self.progress_timer.start(1500)
 
-    def processEnvironmentFromDict(self, mapping: dict[str, str]):
+    def process_environment_from_dict(self, mapping: dict[str, str]):
         from PyQt6.QtCore import QProcessEnvironment
 
         env = QProcessEnvironment()
