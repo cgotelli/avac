@@ -15,7 +15,7 @@ from gui.tabs.setup_tab import ProjectSetupTab
 class MainWindow(QMainWindow):
     def __init__(self, project_dir: Path):
         super().__init__()
-        self.setWindowTitle("AVAC Desktop GUI")
+        self.setWindowTitle("AVAC")
         self.resize(1400, 900)
 
         self.state = AppState(project_dir=project_dir)
@@ -30,7 +30,7 @@ class MainWindow(QMainWindow):
         self.results_tab = ResultsTab(self.state)
 
         self.tabs.addTab(self.setup_tab, "Project Setup")
-        self.tabs.addTab(self.input_workspace_tab, "Input Data & Shapes")
+        self.tabs.addTab(self.input_workspace_tab, "Input Data and Shapes")
         self.tabs.addTab(self.parameters_tab, "Parameters")
         self.tabs.addTab(self.run_tab, "Run Simulation")
-        self.tabs.addTab(self.results_tab, "Results & Analysis")
+        self.tabs.addTab(self.results_tab, "Results and Analysis")
