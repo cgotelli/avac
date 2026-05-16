@@ -1,6 +1,7 @@
 # AVAC 4.1
 
 AVAC is an avalanche-dynamics model with a desktop GUI workflow.
+The GUI is portable: install the GUI environment once, then use it with different project folders.
 
 This README is organized for a **first-time Windows PC with WSL** installation.
 
@@ -44,11 +45,20 @@ python3 -m venv env
 source env/bin/activate
 pip install --upgrade pip
 pip install -r requirements-gui.txt
+python -c "from PyQt6.QtWebEngineWidgets import QWebEngineView; print('PyQt6-WebEngine OK')"
 ```
 
 ### Step E: Launch GUI
 
 ```bash
+python avac_gui.py
+```
+
+Every time you open a new terminal, activate the same environment before launching:
+
+```bash
+cd /path/to/avac
+source env/bin/activate
 python avac_gui.py
 ```
 
@@ -73,6 +83,15 @@ After the GUI opens:
   - `AVAC_CLAW_ROOT=/absolute/path/to/clawpack-src`
 
 ## 4) Troubleshooting (WSL/Qt)
+
+If the GUI says `Leaflet editor is unavailable because PyQt6-WebEngine is not installed`:
+
+```bash
+cd /path/to/avac
+source env/bin/activate
+pip install --upgrade PyQt6-WebEngine
+python -c "from PyQt6.QtWebEngineWidgets import QWebEngineView; print('PyQt6-WebEngine OK')"
+```
 
 If QtWebEngine/EGL fails:
 
@@ -109,7 +128,23 @@ source env/bin/activate
 python avac_gui.py
 ```
 
-## 7) Legacy notebook workflow (optional)
+## 7) Windows desktop icon (direct access)
+
+Yes, you can launch AVAC from a Windows icon (without opening WSL manually).
+
+From **Windows PowerShell** in the repository folder:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\create_windows_shortcut.ps1
+```
+
+This creates an `AVAC GUI` shortcut on your Windows Desktop that launches:
+- WSL
+- the repo folder
+- `env/bin/activate`
+- `python avac_gui.py`
+
+## 8) Legacy notebook workflow (optional)
 
 Repository notebooks:
 
@@ -118,7 +153,7 @@ Repository notebooks:
 
 Use this path only if you specifically want the notebook-based workflow.
 
-## 8) Developer/CI (optional)
+## 9) Developer/CI (optional)
 
 Run tests:
 

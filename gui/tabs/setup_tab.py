@@ -141,6 +141,7 @@ class ProjectSetupTab(QWidget):
 
         lines = [
             f"Python: {'OK' if status.python_ok else 'Missing'} ({status.python_path})",
+            f"PyQt6-WebEngine: {'OK' if status.webengine_ready else 'Missing'}",
             f"gfortran: {'OK' if status.gfortran_found else 'Missing'} ({status.gfortran_path or '-'})",
             f"Clawpack: {'OK' if status.clawpack_ready else 'Missing'} ({status.claw_path or '-'})",
             f"AVAC solver files: {'OK' if status.avac_files_extracted else 'Missing'}",

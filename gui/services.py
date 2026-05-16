@@ -402,6 +402,13 @@ def build_local_claw_env(
 def check_environment(project_dir: Path) -> EnvironmentStatus:
     status = EnvironmentStatus()
     status.python_path = sys.executable
+    try:
+        from PyQt6.QtWebEngineWidgets import QWebEngineView as _QWebEngineView  # noqa: F401
+
+        status.webengine_ready = True
+    except Exception:  # noqa: BLE001
+        status.webengine_ready = False
+
     gfortran = shutil.which("gfortran")
     status.gfortran_found = bool(gfortran)
     status.gfortran_path = gfortran or ""
@@ -430,6 +437,11 @@ def check_environment(project_dir: Path) -> EnvironmentStatus:
             status.notes.append("Using project-local fallback Clawpack source")
     if not status.avac_files_extracted:
         status.notes.append("AVAC solver files not extracted in project folder")
+    if not status.webengine_ready:
+        status.notes.append(
+            "PyQt6-WebEngine is missing in this Python environment. "
+            "Activate env and run: pip install -r requirements-gui.txt"
+        )
     return status
 
 

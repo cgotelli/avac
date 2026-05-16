@@ -43,6 +43,7 @@ DEFAULT_PARAMETERS: dict[str, Any] = {
 @dataclass
 class EnvironmentStatus:
     python_ok: bool = True
+    webengine_ready: bool = False
     gfortran_found: bool = False
     clawpack_ready: bool = False
     avac_files_extracted: bool = False
