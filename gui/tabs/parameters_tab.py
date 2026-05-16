@@ -48,7 +48,7 @@ class ParametersTab(QWidget):
         super().__init__()
         self.state = state
         self.widgets: dict[str, QWidget] = {}
-        self.integer_combo_fields = {"release.period_return"}
+        self.integer_combo_fields: set[str] = set()
 
         root = QVBoxLayout(self)
         top_row = QHBoxLayout()
@@ -120,10 +120,6 @@ class ParametersTab(QWidget):
         zref.setRange(0, 9000)
         zref.valueChanged.connect(self.push_to_state)
 
-        period = self._register("release.period_return", QComboBox())
-        period.addItems(["100", "300"])
-        period.currentTextChanged.connect(self.push_to_state)
-
         corr_slope = self._register("release.correction_slope", QCheckBox("Enable slope correction"))
         corr_slope.stateChanged.connect(self.push_to_state)
 
@@ -134,7 +130,6 @@ class ParametersTab(QWidget):
         form.addRow("theta_cr [deg]", theta)
         form.addRow("gradient_hypso", grad)
         form.addRow("z_ref [m]", zref)
-        form.addRow("Return period", period)
         form.addRow(corr_slope)
         form.addRow(corr_elev)
         return container
@@ -280,6 +275,8 @@ class ParametersTab(QWidget):
 
     def push_to_state(self, *_args) -> None:
         params = deepcopy(self.state.parameters)
+        if isinstance(params.get("release"), dict):
+            params["release"].pop("period_return", None)
         for full_key, widget in self.widgets.items():
             if full_key.endswith("runtime_estimate"):
                 continue
@@ -313,6 +310,8 @@ class ParametersTab(QWidget):
             return
         try:
             loaded = read_yaml(Path(selected))
+            if isinstance(loaded.get("release"), dict):
+                loaded["release"].pop("period_return", None)
             self.state.update_parameters(loaded)
             self.pull_from_state()
             self.validation_label.setText(f"Loaded: {selected}")

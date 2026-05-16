@@ -19,7 +19,6 @@ DEFAULT_PARAMETERS: dict[str, Any] = {
         "theta_cr": 30,
         "gradient_hypso": 0.03,
         "z_ref": 2000,
-        "period_return": 300,
     },
     "rheology": {"model": "Voellmy", "rho": 300, "mu": 0.2, "xi": 1800, "u_cr": 0.1, "beta": 1.1},
     "topography": {"dem": "topo1m.asc", "starting_areas": "ZA.shp"},

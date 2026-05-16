@@ -24,7 +24,6 @@ release:
   d0: 1.77
   gradient_hypso: 0.03
   nu: 0.2
-  period_return: 300
   theta_cr: 30
   z_ref: 2000
 rheology:
