@@ -51,6 +51,7 @@ A cross-platform desktop GUI is now included to replace the notebook-driven flow
 ### New machine setup (Windows + WSL)
 
 This repository is designed to run on Windows laptops through WSL (Ubuntu).
+For GUI display, use Windows 11 (WSLg included) or Windows 10 with an external X server.
 
 1. Install WSL2 + Ubuntu:
    ```powershell
@@ -59,11 +60,12 @@ This repository is designed to run on Windows laptops through WSL (Ubuntu).
 2. Open Ubuntu and install system dependencies:
    ```bash
    sudo apt-get update
-   sudo apt-get install -y python3 python3-venv python3-pip gfortran make ninja-build libgl1 libegl1
+   sudo apt-get install -y git python3 python3-venv python3-pip gfortran make ninja-build libgl1 libegl1 libxcb-cursor0 ffmpeg
    ```
-3. Clone this repository (or open an existing clone) and enter the repo root:
+3. Clone this repository and enter the repo root:
    ```bash
-   cd /path/to/avac
+   git clone https://github.com/cgotelli/avac.git
+   cd avac
    ```
 4. Create Python environment and install GUI requirements:
    ```bash
@@ -82,6 +84,20 @@ This repository is designed to run on Windows laptops through WSL (Ubuntu).
 
 After Clawpack is installed once, you can switch project folders without reinstalling Clawpack.
 Always launch the GUI from this repository root so bundled setup files (`clawpack-v5.14.0.zip`, `files.tar.gz`) are discoverable.
+
+### First example run (quick validation)
+
+After the GUI opens:
+
+1. Go to **Project Setup**:
+   - Click **Select Project Folder** and pick the repository root (`.../avac`).
+   - Click **Extract AVAC Files to Project**.
+   - Click **Install Shared Clawpack** (first run can take several minutes).
+2. In **Project Setup**, click **Load Pralognan Example**.
+3. Go to **Run Simulation**:
+   - Click **Run AVAC (make .output)** and wait until completion.
+4. Go to **Results & Analysis**:
+   - Click **Load Last Run Results** and verify maps/frames appear.
 
 ### Run the GUI (quick)
 
