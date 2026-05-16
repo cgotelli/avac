@@ -439,8 +439,9 @@ def check_environment(project_dir: Path) -> EnvironmentStatus:
         status.notes.append("AVAC solver files not extracted in project folder")
     if not status.webengine_ready:
         status.notes.append(
-            "PyQt6-WebEngine is missing in this Python environment. "
-            "Activate env and run: pip install -r requirements-gui.txt"
+            "PyQt6-WebEngine is unavailable. Install Python deps and Linux runtime libs:\n"
+            "  pip install -r requirements-gui.txt\n"
+            "  sudo apt-get install -y libnspr4 libnss3"
         )
     return status
 

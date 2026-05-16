@@ -28,7 +28,7 @@ Open Ubuntu and run:
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y git python3 python3-venv python3-pip gfortran make ninja-build libgl1 libegl1 libxcb-cursor0 ffmpeg
+sudo apt-get install -y git python3 python3-venv python3-pip gfortran make ninja-build libgl1 libegl1 libxcb-cursor0 libnspr4 libnss3 ffmpeg
 ```
 
 ### Step C: Clone the repository
@@ -90,6 +90,16 @@ If the GUI says `Leaflet editor is unavailable because PyQt6-WebEngine is not in
 cd /path/to/avac
 source env/bin/activate
 pip install --upgrade PyQt6-WebEngine
+python -c "from PyQt6.QtWebEngineWidgets import QWebEngineView; print('PyQt6-WebEngine OK')"
+```
+
+If you get `ImportError: libnspr4.so: cannot open shared object file`:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y libnspr4 libnss3
+cd /path/to/avac
+source env/bin/activate
 python -c "from PyQt6.QtWebEngineWidgets import QWebEngineView; print('PyQt6-WebEngine OK')"
 ```
 
