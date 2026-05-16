@@ -1,13 +1,14 @@
 param(
     [string]$RepoWindowsPath = "",
     [string]$ShortcutName = "AVAC GUI",
-    [switch]$Overwrite
+    [switch]$Overwrite,
+    [switch]$SkipWslgTitleFix
 )
 
 $ErrorActionPreference = "Stop"
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 if (-not $RepoWindowsPath) {
-    $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
     $RepoWindowsPath = (Resolve-Path -LiteralPath (Join-Path $scriptDir "..")).Path
 } else {
     $RepoWindowsPath = (Resolve-Path -LiteralPath $RepoWindowsPath).Path
@@ -40,6 +41,13 @@ $shortcut.WorkingDirectory = $RepoWindowsPath
 $shortcut.Description = "Launch AVAC GUI inside WSL"
 $shortcut.IconLocation = "$wslExe,0"
 $shortcut.Save()
+
+if (-not $SkipWslgTitleFix) {
+    $titleFixScript = Join-Path $scriptDir "disable_wslg_copy_warning_title.ps1"
+    if (Test-Path -LiteralPath $titleFixScript) {
+        & $titleFixScript
+    }
+}
 
 Write-Host "Created shortcut: $shortcutPath"
 Write-Host "Target repository: $RepoWindowsPath"

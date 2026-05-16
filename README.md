@@ -153,6 +153,17 @@ unset AVAC_FORCE_XCB
 python avac_gui.py
 ```
 
+If the Windows taskbar title shows `[WARN: COPY MODE]` before `AVAC`:
+
+This warning is added by WSLg (not by AVAC). Disable that title prefix once from Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\disable_wslg_copy_warning_title.ps1
+wsl --shutdown
+```
+
+Then launch AVAC again.
+
 ## 5) Requirements files
 
 - `requirements-gui.txt`: required for running GUI
