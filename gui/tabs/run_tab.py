@@ -85,12 +85,14 @@ class RunSimulationTab(QWidget):
         m = self.state.dem_metadata
         comp = self.state.parameters.get("computation", {})
         self.expected_frames = int(comp.get("nb_simul", 1))
+        output_dir = str(comp.get("output_directory", "_output"))
+        output_display = output_dir[1:] if output_dir.startswith("_") and len(output_dir) > 1 else output_dir
         lines = [
             f"Project: {self.state.project_dir}",
             f"DEM size: {m.get('ncols', '?')} x {m.get('nrows', '?')}",
             f"Cell size: {m.get('cellsize', '?')}",
             f"Expected frames: {self.expected_frames}",
-            f"Output dir: {comp.get('output_directory', '_output')}",
+            f"Output folder: {output_display}",
         ]
         self.summary.setText("\n".join(lines))
 
@@ -124,9 +126,9 @@ class RunSimulationTab(QWidget):
             self.state.project_dir,
             python_executable=sys.executable,
         )
-        self.log.append(f"Using CLAW={env.get('CLAW', '')}")
-        self.log.append(f"Using CLAW_PYTHON={env.get('CLAW_PYTHON', '')}")
-        self.log.append(f"Using MESONPY_EDITABLE_SKIP={env.get('MESONPY_EDITABLE_SKIP', '')}")
+        self.log.append(f"Using CLAW root: {env.get('CLAW', '')}")
+        self.log.append(f"Using CLAW Python: {env.get('CLAW_PYTHON', '')}")
+        self.log.append(f"Using Meson editable skip paths: {env.get('MESONPY_EDITABLE_SKIP', '')}")
 
         self.process.setWorkingDirectory(str(self.state.project_dir))
         self.process.setProcessEnvironment(self.process_environment_from_dict(env))

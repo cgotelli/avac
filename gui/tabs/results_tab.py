@@ -418,7 +418,7 @@ class ResultsTab(QWidget):
             fallback = QLabel(
                 "Leaflet profile editor is unavailable because PyQt6-WebEngine is not installed."
                 if not self.profile_webengine_disabled
-                else "Leaflet profile editor is disabled by AVAC_DISABLE_WEBENGINE=1."
+                else "Leaflet profile editor is disabled by the webengine disable flag."
             )
             fallback.setWordWrap(True)
             layout.addWidget(fallback)
@@ -643,7 +643,7 @@ class ResultsTab(QWidget):
             if updated is None:
                 return
             if "profile_id" not in updated.columns:
-                updated["profile_id"] = [f"profile_{i + 1}" for i in range(len(updated))]
+                updated["profile_id"] = [f"Profile {i + 1}" for i in range(len(updated))]
 
             self.profile_vector = updated.reset_index(drop=True)
             self.last_profile_series = []
@@ -669,7 +669,7 @@ class ResultsTab(QWidget):
         if frame.crs is None:
             frame = frame.set_crs(self._effective_profile_crs(), allow_override=True)
         if "profile_id" not in frame.columns:
-            frame["profile_id"] = [f"profile_{i + 1}" for i in range(len(frame))]
+            frame["profile_id"] = [f"Profile {i + 1}" for i in range(len(frame))]
         frame = frame[["profile_id", "geometry"]]
 
         path = Path(path)
@@ -734,7 +734,7 @@ class ResultsTab(QWidget):
         selected, _ = QFileDialog.getSaveFileName(
             self,
             "Export profile values to CSV",
-            str(self.state.project_dir / "profiles_values.csv"),
+            str(self.state.project_dir / "profiles-data.csv"),
             "CSV (*.csv)",
         )
         if not selected:
@@ -748,7 +748,7 @@ class ResultsTab(QWidget):
         headers: list[str] = []
         for idx in range(len(profile_series)):
             p = idx + 1
-            headers.extend([f"X_P{p}", f"Y_P{p}", f"velocity_P{p}", f"pressure_P{p}", f"depth_P{p}"])
+            headers.extend([f"X P{p}", f"Y P{p}", f"velocity P{p}", f"pressure P{p}", f"depth P{p}"])
 
         row_count = max(len(series["x"]) for series in profile_series)
         with csv_path.open("w", newline="", encoding="utf-8") as handle:
@@ -835,7 +835,7 @@ class ResultsTab(QWidget):
         self.status_label.setText(f"Loaded results: {result_dir}")
 
     def _auto_select_latest_animation(self) -> None:
-        patterns = ("AVAC_animation_for_*.mp4",)
+        patterns = ("AVAC-animation-for-*.mp4", "AVAC_animation_for_*.mp4")
         candidates: list[Path] = []
         for pattern in patterns:
             candidates.extend(self.state.project_dir.glob(pattern))
@@ -986,7 +986,7 @@ class ResultsTab(QWidget):
         selected, _ = QFileDialog.getSaveFileName(
             self,
             "Export current frame as PNG",
-            str(self.state.project_dir / f"{kind}_frame{frame_no:04d}.png"),
+            str(self.state.project_dir / f"{kind}-frame{frame_no:04d}.png"),
             "PNG (*.png)",
         )
         if not selected:
@@ -1015,7 +1015,7 @@ class ResultsTab(QWidget):
             try:
                 frame_data = self._load_fgout_frame_cached(frame_no)
                 self._draw_time_map(frame_data, kind)
-                output_file = out_dir / f"{kind}_frame{frame_no:04d}.png"
+                output_file = out_dir / f"{kind}-frame{frame_no:04d}.png"
                 self.time_map_figure.savefig(output_file, dpi=300)
                 saved_count += 1
                 self.time_map_info.setText(f"Exporting PNG frames: {index + 1}/{len(self.fgout_frames)}")
@@ -1085,7 +1085,7 @@ class ResultsTab(QWidget):
         selected, _ = QFileDialog.getSaveFileName(
             self,
             "Export raster",
-            str(self.state.project_dir / f"{key}_max_export.asc"),
+            str(self.state.project_dir / f"{key}-max-export.asc"),
             "ASCII (*.asc)",
         )
         if not selected:
@@ -1442,7 +1442,7 @@ class ResultsTab(QWidget):
 
         variable = self.animation_variable.currentText().strip().lower()
         fps = int(self.animation_fps.value())
-        prefix = (self.state.project_dir / f"AVAC_animation_for_{variable}").resolve()
+        prefix = (self.state.project_dir / f"AVAC-animation-for-{variable}").resolve()
         self._pending_animation_prefix = prefix
         self._animation_was_stopped = False
 

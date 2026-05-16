@@ -127,9 +127,9 @@ class ParametersTab(QWidget):
         corr_elev.stateChanged.connect(self.push_to_state)
 
         form.addRow("d0 [m]", d0)
-        form.addRow("theta_cr [deg]", theta)
-        form.addRow("gradient_hypso", grad)
-        form.addRow("z_ref [m]", zref)
+        form.addRow("theta cr [deg]", theta)
+        form.addRow("hypsometric gradient", grad)
+        form.addRow("z ref [m]", zref)
         form.addRow(corr_slope)
         form.addRow(corr_elev)
         return container
@@ -165,7 +165,7 @@ class ParametersTab(QWidget):
         beta.setSingleStep(0.05)
         beta.valueChanged.connect(self.push_to_state)
 
-        for label, key in [("Model", model), ("mu", mu), ("xi", xi), ("rho", rho), ("u_cr", ucr), ("beta", beta)]:
+        for label, key in [("Model", model), ("mu", mu), ("xi", xi), ("rho", rho), ("u cr", ucr), ("beta", beta)]:
             form.addRow(label, key)
         return container
 
@@ -203,10 +203,10 @@ class ParametersTab(QWidget):
         self.widgets["computation.runtime_estimate"] = runtime
 
         pairs = [
-            ("t_max", tmax),
-            ("nb_simul", nbs),
-            ("cfl_target", cfl_target),
-            ("cfl_max", cfl_max),
+            ("t max", tmax),
+            ("number of simulations", nbs),
+            ("CFL target", cfl_target),
+            ("CFL max", cfl_max),
             ("refinement", refinement),
             ("boundary", boundary),
         ]
@@ -238,7 +238,7 @@ class ParametersTab(QWidget):
         n_out.valueChanged.connect(self.push_to_state)
 
         form.addRow("output format", fmt)
-        form.addRow("delta_t", delta)
+        form.addRow("delta t", delta)
         form.addRow("animation variable", anim_var)
         form.addRow("animation frames", n_out)
         return container
@@ -330,11 +330,11 @@ class ParametersTab(QWidget):
         issues: list[str] = []
         p = self.state.parameters
         if p["computation"]["cfl_target"] > p["computation"]["cfl_max"]:
-            issues.append("cfl_target must be <= cfl_max")
+            issues.append("CFL target must be <= CFL max")
         if p["output"]["delta_t"] > p["computation"]["t_max"]:
-            issues.append("output.delta_t should be <= computation.t_max")
+            issues.append("Output delta t should be <= computation t max")
         if p["rheology"]["model"] not in {"Voellmy", "Coulomb"}:
-            issues.append("rheology.model must be Voellmy or Coulomb")
+            issues.append("Rheology model must be Voellmy or Coulomb")
 
         if issues:
             self.validation_label.setStyleSheet("color: #b71c1c;")

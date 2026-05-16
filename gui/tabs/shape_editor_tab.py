@@ -242,7 +242,7 @@ class ShapeEditorTab(QWidget):
             message = "Leaflet editor is unavailable because PyQt6-WebEngine is not installed."
             if self.webengine_disabled:
                 message = (
-                    "Leaflet editor is disabled by AVAC_DISABLE_WEBENGINE=1 "
+                    "Leaflet editor is disabled by the webengine disable flag "
                     "for compatibility on this system."
                 )
             fallback_layout.addWidget(QLabel(message))
@@ -351,9 +351,9 @@ class ShapeEditorTab(QWidget):
             self.refresh_table_and_map()
             msg = self._alignment_message()
             suffix = f" {msg}" if msg else ""
-            self.status.setText(f"Loaded {len(self.vector)} features from state.{suffix}")
+            self.status.setText(f"Loaded {len(self.vector)} features from the selected project file.{suffix}")
         except Exception as exc:  # noqa: BLE001
-            self.status.setText(f"Failed to load starting areas from state: {exc}")
+            self.status.setText(f"Failed to load starting areas from the selected project file: {exc}")
 
     def load_shapefile(self) -> None:
         selected, _ = QFileDialog.getOpenFileName(
@@ -394,7 +394,7 @@ class ShapeEditorTab(QWidget):
         selected, _ = QFileDialog.getSaveFileName(
             self,
             "Save shapefile as",
-            str(self.state.project_dir / "ZA_edited.shp"),
+            str(self.state.project_dir / "ZA-edited.shp"),
             "Shapefiles (*.shp)",
         )
         if not selected:
@@ -416,7 +416,7 @@ class ShapeEditorTab(QWidget):
         selected, _ = QFileDialog.getSaveFileName(
             self,
             "Export GeoJSON",
-            str(self.state.project_dir / "ZA_edited.geojson"),
+            str(self.state.project_dir / "ZA-edited.geojson"),
             "GeoJSON (*.geojson)",
         )
         if not selected:
@@ -441,7 +441,7 @@ class ShapeEditorTab(QWidget):
                 updated = _empty_frame(crs=crs)
 
             if "feature_name" not in updated.columns:
-                updated["feature_name"] = [f"feature_{i + 1}" for i in range(len(updated))]
+                updated["feature_name"] = [f"Feature {i + 1}" for i in range(len(updated))]
 
             self.vector = updated.reset_index(drop=True)
             msg = self._alignment_message()
