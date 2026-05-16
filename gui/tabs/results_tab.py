@@ -20,6 +20,7 @@ from PyQt6.QtWidgets import (
     QApplication,
     QCheckBox,
     QComboBox,
+    QDoubleSpinBox,
     QFileDialog,
     QGridLayout,
     QGroupBox,
@@ -286,6 +287,103 @@ class ResultsTab(QWidget):
         self.state.changed.connect(self._on_state_changed)
         self.refresh_result_hints()
 
+    @staticmethod
+    def _configure_color_limit_spinbox(spinbox: QDoubleSpinBox) -> None:
+        spinbox.setDecimals(6)
+        spinbox.setRange(-1e12, 1e12)
+        spinbox.setSingleStep(0.1)
+        spinbox.setKeyboardTracking(False)
+
+    @staticmethod
+    def _configure_contour_delta_spinbox(spinbox: QDoubleSpinBox) -> None:
+        spinbox.setDecimals(3)
+        spinbox.setRange(0.001, 1e9)
+        spinbox.setSingleStep(10.0)
+        spinbox.setSuffix(" m")
+        spinbox.setKeyboardTracking(False)
+
+    @staticmethod
+    def _finite_data_limits(values: np.ndarray) -> tuple[float, float] | None:
+        finite = np.asarray(values, dtype=float)
+        finite = finite[np.isfinite(finite)]
+        if finite.size == 0:
+            return None
+        vmin = float(np.nanmin(finite))
+        vmax = float(np.nanmax(finite))
+        if not np.isfinite(vmin) or not np.isfinite(vmax):
+            return None
+        if vmax <= vmin:
+            span = abs(vmin) * 0.01 if vmin != 0.0 else 1.0
+            vmax = vmin + span
+        return vmin, vmax
+
+    @staticmethod
+    def _set_spinbox_value_silent(spinbox: QDoubleSpinBox, value: float) -> None:
+        blocked = spinbox.blockSignals(True)
+        spinbox.setValue(float(value))
+        spinbox.blockSignals(blocked)
+
+    def _resolve_color_limits(
+        self,
+        values: np.ndarray,
+        auto_checkbox: QCheckBox,
+        vmin_spin: QDoubleSpinBox,
+        vmax_spin: QDoubleSpinBox,
+    ) -> tuple[float, float] | None:
+        auto_mode = auto_checkbox.isChecked()
+        vmin_spin.setEnabled(not auto_mode)
+        vmax_spin.setEnabled(not auto_mode)
+
+        auto_limits = self._finite_data_limits(values)
+        if auto_mode:
+            if auto_limits is not None:
+                auto_min, auto_max = auto_limits
+                self._set_spinbox_value_silent(vmin_spin, auto_min)
+                self._set_spinbox_value_silent(vmax_spin, auto_max)
+            return None
+
+        vmin = float(vmin_spin.value())
+        vmax = float(vmax_spin.value())
+        if not np.isfinite(vmin) or not np.isfinite(vmax):
+            raise ValueError("Colorbar limits must be finite numbers.")
+        if vmax <= vmin:
+            raise ValueError("Colorbar limits invalid: max must be greater than min.")
+        return vmin, vmax
+
+    def _resolve_contour_levels(
+        self,
+        elevations: np.ndarray,
+        auto_checkbox: QCheckBox,
+        delta_spin: QDoubleSpinBox,
+    ) -> int | np.ndarray:
+        auto_mode = auto_checkbox.isChecked()
+        delta_spin.setEnabled(not auto_mode)
+        if auto_mode:
+            return 12
+
+        delta = float(delta_spin.value())
+        if not np.isfinite(delta) or delta <= 0.0:
+            raise ValueError("Contour delta must be a positive number.")
+
+        limits = self._finite_data_limits(elevations)
+        if limits is None:
+            return 12
+        zmin, zmax = limits
+
+        start = np.floor(zmin / delta) * delta
+        stop = np.ceil(zmax / delta) * delta
+        if stop <= start:
+            stop = start + delta
+
+        nlevels = int(np.floor((stop - start) / delta)) + 1
+        if nlevels > 2000:
+            raise ValueError("Contour delta too small for this elevation range.")
+
+        levels = start + np.arange(nlevels, dtype=float) * delta
+        if levels.size < 2:
+            levels = np.array([start, start + delta], dtype=float)
+        return levels
+
     def _build_maps_tab(self) -> QWidget:
         container = QWidget()
         layout = QHBoxLayout(container)
@@ -304,10 +402,49 @@ class ResultsTab(QWidget):
         self.map_info = QLabel("Load results to display derived maximum maps.")
         self.map_info.setWordWrap(True)
 
+        map_color_group = QGroupBox("Colorbar Limits")
+        map_color_layout = QGridLayout(map_color_group)
+        self.map_color_auto_checkbox = QCheckBox("Auto")
+        self.map_color_auto_checkbox.setChecked(True)
+        self.map_color_vmin = QDoubleSpinBox()
+        self.map_color_vmax = QDoubleSpinBox()
+        self._configure_color_limit_spinbox(self.map_color_vmin)
+        self._configure_color_limit_spinbox(self.map_color_vmax)
+        self.map_color_vmin.setEnabled(False)
+        self.map_color_vmax.setEnabled(False)
+
+        self.map_color_auto_checkbox.toggled.connect(self._on_map_color_controls_changed)
+        self.map_color_vmin.valueChanged.connect(self._on_map_color_controls_changed)
+        self.map_color_vmax.valueChanged.connect(self._on_map_color_controls_changed)
+
+        map_color_layout.addWidget(self.map_color_auto_checkbox, 0, 0, 1, 2)
+        map_color_layout.addWidget(QLabel("Min"), 1, 0)
+        map_color_layout.addWidget(self.map_color_vmin, 1, 1)
+        map_color_layout.addWidget(QLabel("Max"), 2, 0)
+        map_color_layout.addWidget(self.map_color_vmax, 2, 1)
+
+        map_contour_group = QGroupBox("Elevation Contours")
+        map_contour_layout = QGridLayout(map_contour_group)
+        self.map_contour_auto_checkbox = QCheckBox("Auto spacing")
+        self.map_contour_auto_checkbox.setChecked(True)
+        self.map_contour_delta = QDoubleSpinBox()
+        self._configure_contour_delta_spinbox(self.map_contour_delta)
+        self.map_contour_delta.setValue(25.0)
+        self.map_contour_delta.setEnabled(False)
+
+        self.map_contour_auto_checkbox.toggled.connect(self._on_map_contour_controls_changed)
+        self.map_contour_delta.valueChanged.connect(self._on_map_contour_controls_changed)
+
+        map_contour_layout.addWidget(self.map_contour_auto_checkbox, 0, 0, 1, 2)
+        map_contour_layout.addWidget(QLabel("Delta"), 1, 0)
+        map_contour_layout.addWidget(self.map_contour_delta, 1, 1)
+
         left.addWidget(self.depth_btn)
         left.addWidget(self.velocity_btn)
         left.addWidget(self.pressure_btn)
         left.addWidget(self.export_btn)
+        left.addWidget(map_color_group)
+        left.addWidget(map_contour_group)
         left.addWidget(self.map_info)
         left.addStretch(1)
 
@@ -342,10 +479,49 @@ class ResultsTab(QWidget):
         self.time_map_info = QLabel("Load results to list fgout frames and display time-dependent maps.")
         self.time_map_info.setWordWrap(True)
 
+        time_color_group = QGroupBox("Colorbar Limits")
+        time_color_layout = QGridLayout(time_color_group)
+        self.time_color_auto_checkbox = QCheckBox("Auto")
+        self.time_color_auto_checkbox.setChecked(True)
+        self.time_color_vmin = QDoubleSpinBox()
+        self.time_color_vmax = QDoubleSpinBox()
+        self._configure_color_limit_spinbox(self.time_color_vmin)
+        self._configure_color_limit_spinbox(self.time_color_vmax)
+        self.time_color_vmin.setEnabled(False)
+        self.time_color_vmax.setEnabled(False)
+
+        self.time_color_auto_checkbox.toggled.connect(self._on_time_color_controls_changed)
+        self.time_color_vmin.valueChanged.connect(self._on_time_color_controls_changed)
+        self.time_color_vmax.valueChanged.connect(self._on_time_color_controls_changed)
+
+        time_color_layout.addWidget(self.time_color_auto_checkbox, 0, 0, 1, 2)
+        time_color_layout.addWidget(QLabel("Min"), 1, 0)
+        time_color_layout.addWidget(self.time_color_vmin, 1, 1)
+        time_color_layout.addWidget(QLabel("Max"), 2, 0)
+        time_color_layout.addWidget(self.time_color_vmax, 2, 1)
+
+        time_contour_group = QGroupBox("Elevation Contours")
+        time_contour_layout = QGridLayout(time_contour_group)
+        self.time_contour_auto_checkbox = QCheckBox("Auto spacing")
+        self.time_contour_auto_checkbox.setChecked(True)
+        self.time_contour_delta = QDoubleSpinBox()
+        self._configure_contour_delta_spinbox(self.time_contour_delta)
+        self.time_contour_delta.setValue(25.0)
+        self.time_contour_delta.setEnabled(False)
+
+        self.time_contour_auto_checkbox.toggled.connect(self._on_time_contour_controls_changed)
+        self.time_contour_delta.valueChanged.connect(self._on_time_contour_controls_changed)
+
+        time_contour_layout.addWidget(self.time_contour_auto_checkbox, 0, 0, 1, 2)
+        time_contour_layout.addWidget(QLabel("Delta"), 1, 0)
+        time_contour_layout.addWidget(self.time_contour_delta, 1, 1)
+
         left.addWidget(QLabel("Field"))
         left.addWidget(self.time_kind_combo)
         left.addWidget(QLabel("Time frame"))
         left.addWidget(self.time_frame_combo)
+        left.addWidget(time_color_group)
+        left.addWidget(time_contour_group)
         left.addWidget(self.time_refresh_btn)
         left.addWidget(self.time_show_btn)
         left.addWidget(self.time_export_png_btn)
@@ -491,6 +667,32 @@ class ResultsTab(QWidget):
     def _on_results_subtab_changed(self, index: int) -> None:
         if self.tabs.widget(index) is self.profile_tab_widget:
             self.push_profile_layers_to_leaflet()
+
+    def _on_map_color_controls_changed(self, *_args) -> None:
+        auto_mode = self.map_color_auto_checkbox.isChecked()
+        self.map_color_vmin.setEnabled(not auto_mode)
+        self.map_color_vmax.setEnabled(not auto_mode)
+        if self.active_kind is not None and self.active_kind in self.loaded_rasters:
+            self.draw_map(self.active_kind)
+
+    def _on_map_contour_controls_changed(self, *_args) -> None:
+        auto_mode = self.map_contour_auto_checkbox.isChecked()
+        self.map_contour_delta.setEnabled(not auto_mode)
+        if self.active_kind is not None and self.active_kind in self.loaded_rasters:
+            self.draw_map(self.active_kind)
+
+    def _on_time_color_controls_changed(self, *_args) -> None:
+        auto_mode = self.time_color_auto_checkbox.isChecked()
+        self.time_color_vmin.setEnabled(not auto_mode)
+        self.time_color_vmax.setEnabled(not auto_mode)
+        if self.fgout_frames and self.time_frame_combo.count() > 0:
+            self.draw_selected_time_map()
+
+    def _on_time_contour_controls_changed(self, *_args) -> None:
+        auto_mode = self.time_contour_auto_checkbox.isChecked()
+        self.time_contour_delta.setEnabled(not auto_mode)
+        if self.fgout_frames and self.time_frame_combo.count() > 0:
+            self.draw_selected_time_map()
 
     def _effective_dem_path(self) -> Path | None:
         if self.state.dem_path and self.state.dem_path.exists():
@@ -943,6 +1145,22 @@ class ResultsTab(QWidget):
         if topo_plot.shape != z_plot.shape and topo_plot.T.shape == z_plot.shape:
             topo_plot = topo_plot.T
 
+        color_limits = self._resolve_color_limits(
+            z_plot,
+            self.time_color_auto_checkbox,
+            self.time_color_vmin,
+            self.time_color_vmax,
+        )
+        contour_levels = self._resolve_contour_levels(
+            topo_plot,
+            self.time_contour_auto_checkbox,
+            self.time_contour_delta,
+        )
+        pcolor_kwargs: dict[str, float] = {}
+        if color_limits is not None:
+            pcolor_kwargs["vmin"] = color_limits[0]
+            pcolor_kwargs["vmax"] = color_limits[1]
+
         self.time_map_figure.clear()
         ax = self.time_map_figure.add_subplot(111)
         im = ax.pcolormesh(
@@ -951,10 +1169,11 @@ class ResultsTab(QWidget):
             z_plot,
             shading="auto",
             cmap={"depth": "Blues", "velocity": "magma", "pressure": "inferno"}.get(kind, "viridis"),
+            **pcolor_kwargs,
         )
         self.time_map_figure.colorbar(im, ax=ax, label=kind)
         try:
-            ax.contour(x_plot, y_plot, topo_plot, levels=12, colors="black", alpha=0.25, linewidths=0.35)
+            ax.contour(x_plot, y_plot, topo_plot, levels=contour_levels, colors="black", alpha=0.25, linewidths=0.35)
         except ValueError:
             # Keep map display even if contour grid metadata is inconsistent.
             pass
@@ -973,6 +1192,12 @@ class ResultsTab(QWidget):
             self._draw_time_map(frame_data, kind)
             self.time_map_info.setText(f"Showing {kind} for frame {frame_no:04d} at t={frame_data.time:.3f} s.")
         except Exception as exc:  # noqa: BLE001
+            if isinstance(exc, ValueError) and str(exc).startswith("Colorbar limits"):
+                self.time_map_info.setText(str(exc))
+                return
+            if isinstance(exc, ValueError) and str(exc).startswith("Contour delta"):
+                self.time_map_info.setText(str(exc))
+                return
             QMessageBox.critical(self, "Frame load failed", str(exc))
 
     def export_current_time_map_png(self) -> None:
@@ -1048,27 +1273,71 @@ class ResultsTab(QWidget):
         if kind not in self.loaded_rasters:
             return
         self.active_kind = kind
+        x, y, z = self.loaded_rasters[kind]
+
+        try:
+            color_limits = self._resolve_color_limits(
+                np.asarray(z, dtype=float),
+                self.map_color_auto_checkbox,
+                self.map_color_vmin,
+                self.map_color_vmax,
+            )
+        except ValueError as exc:
+            self.map_info.setText(str(exc))
+            return
+
+        pcolor_kwargs: dict[str, float] = {}
+        if color_limits is not None:
+            pcolor_kwargs["vmin"] = color_limits[0]
+            pcolor_kwargs["vmax"] = color_limits[1]
+
+        contour_x = None
+        contour_y = None
+        contour_z = None
+        if self.result_topography is not None:
+            contour_x, contour_y, contour_z = self.result_topography
+        elif self.state.dem_path and self.state.dem_path.exists():
+            dem = read_ascii_raster(self.state.dem_path)
+            contour_x, contour_y, contour_z = dem.x, dem.y, dem.z
+
+        contour_levels: int | np.ndarray | None = None
+        if contour_z is not None:
+            try:
+                contour_levels = self._resolve_contour_levels(
+                    np.asarray(contour_z, dtype=float),
+                    self.map_contour_auto_checkbox,
+                    self.map_contour_delta,
+                )
+            except ValueError as exc:
+                self.map_info.setText(str(exc))
+                return
 
         self.map_figure.clear()
         ax = self.map_figure.add_subplot(111)
-        x, y, z = self.loaded_rasters[kind]
         im = ax.pcolormesh(
             x,
             y,
             z,
             shading="auto",
             cmap={"depth": "Blues", "velocity": "magma", "pressure": "inferno"}.get(kind, "viridis"),
+            **pcolor_kwargs,
         )
         self.map_figure.colorbar(im, ax=ax, label=kind)
 
-        if self.result_topography is not None:
-            tx, ty, tz = self.result_topography
-            ax.contour(tx, ty, tz, levels=12, colors="black", alpha=0.25, linewidths=0.35)
-        elif self.state.dem_path and self.state.dem_path.exists():
-            dem = read_ascii_raster(self.state.dem_path)
-            gy, gx = np.gradient(np.nan_to_num(dem.z, nan=np.nanmean(dem.z)))
-            hs = np.sqrt(gx**2 + gy**2)
-            ax.contour(dem.x, dem.y, hs, levels=6, colors="black", alpha=0.25, linewidths=0.4)
+        if contour_levels is not None and contour_z is not None:
+            try:
+                ax.contour(
+                    contour_x,
+                    contour_y,
+                    contour_z,
+                    levels=contour_levels,
+                    colors="black",
+                    alpha=0.25,
+                    linewidths=0.35,
+                )
+            except ValueError:
+                # Keep map display even if contour grid metadata is inconsistent.
+                pass
 
         title = f"Maximum {kind}"
         if self.current_result_dir is not None:

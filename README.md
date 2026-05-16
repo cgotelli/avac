@@ -164,6 +164,13 @@ wsl --shutdown
 
 Then launch AVAC again.
 
+If it still appears, run PowerShell as Administrator and apply the system-wide config too:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\disable_wslg_copy_warning_title.ps1 -SystemWide
+wsl --shutdown
+```
+
 ## 5) Requirements files
 
 - `requirements-gui.txt`: required for running GUI
