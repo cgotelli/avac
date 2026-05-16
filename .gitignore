@@ -9,3 +9,31 @@ env/
 _output/
 *.log
 .DS_Store
+
+# Local tool/runtime outputs
+.vendor/
+.data
+.output
+AVAC_configuration.yaml
+AVAC_animation_for_*.html
+AVAC_animation_for_*.mp4
+topography.asc
+init.xyz
+tmp_dem_preview.png
+ZA_edited*
+*.mod
+*.o
+xgeoclaw
+*.data
+
+# Local project sandboxes
+projects/
+ptest/
+p2test/
+p3test/
+
+# Packaging/test artifacts
+.pytest_cache/
+dist/
+build/
+*.spec

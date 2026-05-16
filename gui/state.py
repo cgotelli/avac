@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import platform
+import re
 from dataclasses import dataclass, field
 from copy import deepcopy
 from pathlib import Path
@@ -56,7 +58,6 @@ class AppState(QObject):
     def __init__(self, project_dir: Path):
         super().__init__()
         self.project_dir = Path(project_dir)
-        self.language = "English"
         self.parameters = deepcopy(DEFAULT_PARAMETERS)
         self.dem_path: Path | None = None
         self.starting_areas_path: Path | None = None
@@ -66,8 +67,26 @@ class AppState(QObject):
         self.last_run_log: Path | None = None
 
     def update_project_dir(self, value: str | Path) -> None:
-        self.project_dir = Path(value)
+        self.project_dir = self._normalize_path(value)
+        self.dem_path = None
+        self.starting_areas_path = None
+        self.profile_path = None
+        self.dem_metadata = {}
         self.changed.emit()
+
+    def _normalize_path(self, value: str | Path | None) -> Path | None:
+        if value is None:
+            return None
+        raw = str(value)
+        path = Path(raw)
+        if platform.system().lower() == "linux":
+            # Handle Windows-style paths that can appear in some WSL dialog setups.
+            match = re.match(r"^([A-Za-z]):[\\/](.*)$", raw)
+            if match:
+                drive = match.group(1).lower()
+                rest = match.group(2).replace("\\", "/")
+                return Path(f"/mnt/{drive}/{rest}")
+        return path
 
     def update_parameters(self, params: dict[str, Any]) -> None:
         self.parameters = params
@@ -75,11 +94,17 @@ class AppState(QObject):
 
     def set_paths(self, dem: Path | None = None, starting_areas: Path | None = None, profile: Path | None = None) -> None:
         if dem is not None:
-            self.dem_path = dem
-            self.parameters.setdefault("topography", {})["dem"] = dem.name
+            normalized_dem = self._normalize_path(dem)
+            if normalized_dem is not None:
+                self.dem_path = normalized_dem
+                self.parameters.setdefault("topography", {})["dem"] = normalized_dem.name
         if starting_areas is not None:
-            self.starting_areas_path = starting_areas
-            self.parameters.setdefault("topography", {})["starting_areas"] = starting_areas.name
+            normalized_starting = self._normalize_path(starting_areas)
+            if normalized_starting is not None:
+                self.starting_areas_path = normalized_starting
+                self.parameters.setdefault("topography", {})["starting_areas"] = normalized_starting.name
         if profile is not None:
-            self.profile_path = profile
+            normalized_profile = self._normalize_path(profile)
+            if normalized_profile is not None:
+                self.profile_path = normalized_profile
         self.changed.emit()

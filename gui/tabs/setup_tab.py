@@ -12,13 +12,12 @@ from PyQt6.QtWidgets import (
     QLabel,
     QMessageBox,
     QPushButton,
-    QComboBox,
     QTextEdit,
     QVBoxLayout,
     QWidget,
 )
 
-from gui.services import check_environment, extract_avac_files, install_clawpack_from_zip
+from gui.services import check_environment, extract_avac_files, install_clawpack_from_zip, resolve_clawpack_source_dir
 from gui.state import AppState
 
 
@@ -41,17 +40,12 @@ class ProjectSetupTab(QWidget):
         quickstart_btn = QPushButton("Load Pralognan Example")
         quickstart_btn.clicked.connect(self.load_quickstart)
 
-        language = QComboBox()
-        language.addItems(["English", "French"])
-        language.currentTextChanged.connect(self.on_language_changed)
-
         row = QHBoxLayout()
         row.addWidget(pick_project_btn)
         row.addWidget(quickstart_btn)
 
         project_form.addRow("Current folder:", self.project_label)
         project_form.addRow("Actions:", self._as_widget(row))
-        project_form.addRow("Language:", language)
 
         env_box = QGroupBox("Environment status")
         env_layout = QVBoxLayout(env_box)
@@ -64,10 +58,10 @@ class ProjectSetupTab(QWidget):
         refresh_btn = QPushButton("Refresh Status")
         refresh_btn.clicked.connect(self.refresh_environment)
 
-        extract_btn = QPushButton("Extract AVAC Files")
+        extract_btn = QPushButton("Extract AVAC Files to Project")
         extract_btn.clicked.connect(self.extract_avac)
 
-        setup_claw_btn = QPushButton("Install Local Clawpack")
+        setup_claw_btn = QPushButton("Install Shared Clawpack")
         setup_claw_btn.clicked.connect(self.install_clawpack)
 
         actions.addWidget(refresh_btn)
@@ -95,9 +89,13 @@ class ProjectSetupTab(QWidget):
         w.setLayout(layout)
         return w
 
-    def on_language_changed(self, value: str) -> None:
-        self.state.language = value
-        self.state.changed.emit()
+    def _resolve_setup_asset(self, filename: str) -> Path | None:
+        repo_root = Path(__file__).resolve().parents[2]
+        candidates = [repo_root / filename, self.state.project_dir / filename]
+        for candidate in candidates:
+            if candidate.exists():
+                return candidate
+        return None
 
     def pick_project_folder(self) -> None:
         selected = QFileDialog.getExistingDirectory(self, "Select project directory", str(self.state.project_dir))
@@ -108,13 +106,34 @@ class ProjectSetupTab(QWidget):
         self.refresh_environment()
 
     def load_quickstart(self) -> None:
-        # Demo assets are already in repository root.
-        self.state.set_paths(
-            dem=self.state.project_dir / "topo1m.asc",
-            starting_areas=self.state.project_dir / "ZA.shp",
-            profile=self.state.project_dir / "profil.shp",
-        )
-        QMessageBox.information(self, "Quickstart", "Demo dataset loaded into current project.")
+        repo_root = Path(__file__).resolve().parents[2]
+        candidates = [repo_root, self.state.project_dir]
+
+        def resolve_asset(name: str) -> Path | None:
+            for base in candidates:
+                path = base / name
+                if path.exists():
+                    return path
+            return None
+
+        dem = resolve_asset("topo1m.asc")
+        starting = resolve_asset("ZA.shp")
+
+        missing = [
+            label
+            for label, value in (("DEM (topo1m.asc)", dem), ("Starting areas (ZA.shp)", starting))
+            if value is None
+        ]
+        if missing:
+            QMessageBox.warning(
+                self,
+                "Quickstart",
+                "Cannot load quickstart dataset. Missing: " + ", ".join(missing),
+            )
+            return
+
+        self.state.set_paths(dem=dem, starting_areas=starting)
+        QMessageBox.information(self, "Quickstart", "Demo dataset loaded.")
 
     def refresh_environment(self) -> None:
         status = check_environment(self.state.project_dir)
@@ -132,25 +151,40 @@ class ProjectSetupTab(QWidget):
         self.status_text.setPlainText("\n".join(lines))
 
     def extract_avac(self) -> None:
+        archive = self._resolve_setup_asset("files.tar.gz")
+        if archive is None:
+            QMessageBox.critical(
+                self,
+                "Extraction failed",
+                "Cannot find files.tar.gz in the selected project folder or repository root.",
+            )
+            return
         try:
-            extract_avac_files(self.state.project_dir / "files.tar.gz", self.state.project_dir)
+            self.status_text.append(f"\nExtracting AVAC files from: {archive}")
+            extract_avac_files(archive, self.state.project_dir)
             QMessageBox.information(self, "Extraction", "AVAC files extracted successfully.")
             self.refresh_environment()
         except Exception as exc:  # noqa: BLE001
             QMessageBox.critical(self, "Extraction failed", str(exc))
 
     def install_clawpack(self) -> None:
-        zip_path = self.state.project_dir / "clawpack-v5.14.0.zip"
-        if not zip_path.exists():
-            QMessageBox.critical(self, "Error", f"Cannot find {zip_path}")
+        zip_path = self._resolve_setup_asset("clawpack-v5.14.0.zip")
+        if zip_path is None:
+            QMessageBox.critical(
+                self,
+                "Error",
+                "Cannot find clawpack-v5.14.0.zip in the selected project folder or repository root.",
+            )
             return
 
-        self.status_text.append("\nInstalling local clawpack. This can take a while...")
+        target = resolve_clawpack_source_dir(self.state.project_dir)
+        self.status_text.append(f"\nInstalling shared clawpack to: {target}")
+        self.status_text.append(f"Using source zip: {zip_path}")
         try:
             returncode, output = install_clawpack_from_zip(zip_path, self.state.project_dir)
             self.status_text.append(output)
             if returncode == 0:
-                QMessageBox.information(self, "Clawpack", "Local Clawpack installation completed.")
+                QMessageBox.information(self, "Clawpack", "Shared Clawpack installation completed.")
             else:
                 QMessageBox.warning(self, "Clawpack", "Installation finished with errors. Check logs in this panel.")
             self.refresh_environment()

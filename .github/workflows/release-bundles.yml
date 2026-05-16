@@ -1,0 +1,57 @@
+name: release-bundles
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-bundles:
+    name: Build bundle (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-gui.txt
+          pip install -r requirements-build.txt
+
+      - name: Build portable bundle
+        run: python scripts/build_desktop_bundle.py
+
+      - name: Archive bundle
+        shell: bash
+        run: |
+          mkdir -p out
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            powershell -Command "Compress-Archive -Path dist/avac-gui/* -DestinationPath out/avac-gui-${{ runner.os }}.zip"
+          else
+            cd dist
+            zip -r ../out/avac-gui-${{ runner.os }}.zip avac-gui
+          fi
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: avac-gui-${{ runner.os }}
+          path: out/*.zip
+
+      - name: Upload release asset
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: out/*.zip

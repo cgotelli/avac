@@ -14,9 +14,7 @@ The folder contains two datasets for the sake of illustration:
 * shapefile (position and limits of the starting areas)
 Change with your own files if needed.
 
-An optional file (profil.shp) is provided for plotting cross-sections.
-
-For the moment, you can select the language (Franch/English) for customizing figure captions. In progress...
+An optional file (`profil.shp`) is provided for plotting cross-sections.
 
 ## Caveat
 The main problem is usually the compiler parameters. Check lines 24 and 25 of Makefile and change if needed:
@@ -33,16 +31,16 @@ Last update 30 Aug 2025
 
 ## AVAC Desktop GUI (new)
 
-A cross-platform desktop GUI is now included to replace the notebook-driven flow with a guided 5-step workflow.
+A cross-platform desktop GUI is now included to replace the notebook-driven flow with a guided workflow.
 
 ### Features implemented
 
-- 5-tab wizard:
-  1. **Project Setup**: project folder, language, environment checks, AVAC file extraction, local Clawpack install
-  2. **Input Data**: DEM and shapefile selection, metadata validation, map preview with hillshade/slope overlays
+- 5-tab workflow:
+  1. **Project Setup**: project folder selection, environment checks, AVAC file extraction, shared Clawpack install
+  2. **Input Data & Shapes**: DEM and shapefile selection, metadata validation, map preview, plus embedded shape editing with Leaflet
   3. **Parameters**: grouped release/rheology/computation/output controls, YAML load/save, validation, initial depth preview
   4. **Run Simulation**: run `make clean && make .output`, stream logs live, stop run, monitor progress
-  5. **Results & Analysis**: max map display/export, profile loading, statistics, animation file launcher, time-series placeholder
+  5. **Results & Analysis**: max maps, time maps, profile drawing/plotting/export, and animation export/playback
 
 - Portability helpers:
   - `scripts/bootstrap_local_env.sh`
@@ -50,7 +48,42 @@ A cross-platform desktop GUI is now included to replace the notebook-driven flow
   - `launch.bat` (Windows -> WSL launcher)
   - `Dockerfile`
 
-### Run the GUI
+### New machine setup (Windows + WSL)
+
+This repository is designed to run on Windows laptops through WSL (Ubuntu).
+
+1. Install WSL2 + Ubuntu:
+   ```powershell
+   wsl --install -d Ubuntu
+   ```
+2. Open Ubuntu and install system dependencies:
+   ```bash
+   sudo apt-get update
+   sudo apt-get install -y python3 python3-venv python3-pip gfortran make ninja-build libgl1 libegl1
+   ```
+3. Clone this repository (or open an existing clone) and enter the repo root:
+   ```bash
+   cd /path/to/avac
+   ```
+4. Create Python environment and install GUI requirements:
+   ```bash
+   python3 -m venv env
+   source env/bin/activate
+   pip install -r requirements-gui.txt
+   ```
+5. Launch GUI:
+   ```bash
+   python avac_gui.py
+   ```
+6. In **Project Setup**:
+   - Select a project folder.
+   - Click **Extract AVAC Files to Project** (required for each new project folder).
+   - Click **Install Shared Clawpack** (one-time per repository).
+
+After Clawpack is installed once, you can switch project folders without reinstalling Clawpack.
+Always launch the GUI from this repository root so bundled setup files (`clawpack-v5.14.0.zip`, `files.tar.gz`) are discoverable.
+
+### Run the GUI (quick)
 
 From the repository root:
 
@@ -75,8 +108,81 @@ python avac_gui.py
 - Open command prompt in the repository folder and run `launch.bat`
 - The launcher starts the GUI through WSL Python
 
+If you see QtWebEngine/EGL errors (e.g. `Failed to get system egl display`), AVAC now applies software-rendering defaults automatically on Linux/WSL. If you need to disable this behavior for debugging, run:
+
+```bash
+AVAC_DISABLE_QT_COMPAT=1 python avac_gui.py
+```
+
+If you need to temporarily disable Leaflet/WebEngine on unstable graphics stacks, use:
+
+```bash
+AVAC_DISABLE_WEBENGINE=1 python avac_gui.py
+```
+
+If you see `Could not load the Qt platform plugin "xcb"`, launch without forcing xcb:
+
+```bash
+unset AVAC_FORCE_XCB
+python avac_gui.py
+```
+
+If you do want xcb explicitly, install the runtime dependency first:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y libxcb-cursor0
+```
+
 ### Notes
 
-- Local Clawpack setup uses `clawpack-v5.14.0.zip` from this repository
+- Shared Clawpack setup uses `clawpack-v5.14.0.zip` from this repository and installs to `<repo>/.vendor/clawpack-src` by default.
 - AVAC solver files are extracted from `files.tar.gz` into the selected project folder
+- Optional override: set `AVAC_CLAW_ROOT=/absolute/path/to/clawpack-src` to force a custom shared location.
 - For headless/container runs, adapt Docker settings for display forwarding as needed
+
+### Testing portability (Windows/WSL, Linux, macOS)
+
+Use local tests before each release:
+
+```bash
+python -m pip install -r requirements-gui.txt
+python -m pip install -r requirements-dev.txt
+pytest -q tests
+```
+
+Repository CI is configured in `.github/workflows/ci.yml` with a matrix on:
+
+- `ubuntu-latest`
+- `windows-latest`
+- `macos-latest`
+
+CI runs unit tests with an offscreen Qt backend (`QT_QPA_PLATFORM=offscreen`) and Agg matplotlib backend (`MPLBACKEND=Agg`) to validate core GUI-related services without a display.
+
+### Optional end-to-end AVAC integration test
+
+An integration test is available for a full `make .output` run and output verification.
+
+```bash
+AVAC_RUN_INTEGRATION=1 pytest -q tests/test_integration_avac_run.py -m integration
+```
+
+Notes:
+
+- It is skipped by default (long-running).
+- It requires `make`, `gfortran`, extracted AVAC solver files, and a Unix-like runtime (Linux/macOS or WSL).
+
+### Build portable desktop bundles
+
+Local build command:
+
+```bash
+python -m pip install -r requirements-gui.txt
+python -m pip install -r requirements-build.txt
+python scripts/build_desktop_bundle.py
+```
+
+The release workflow `.github/workflows/release-bundles.yml` builds bundles on Windows, Linux, and macOS.
+
+- `workflow_dispatch`: build and store artifacts
+- `v*` tag push: build bundles and attach zip assets to GitHub Release

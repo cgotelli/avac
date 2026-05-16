@@ -5,7 +5,7 @@ from pathlib import Path
 from PyQt6.QtWidgets import QMainWindow, QTabWidget
 
 from gui.state import AppState
-from gui.tabs.input_tab import InputDataTab
+from gui.tabs.input_workspace_tab import InputWorkspaceTab
 from gui.tabs.parameters_tab import ParametersTab
 from gui.tabs.results_tab import ResultsTab
 from gui.tabs.run_tab import RunSimulationTab
@@ -24,13 +24,13 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.tabs)
 
         self.setup_tab = ProjectSetupTab(self.state)
-        self.input_tab = InputDataTab(self.state)
+        self.input_workspace_tab = InputWorkspaceTab(self.state)
         self.parameters_tab = ParametersTab(self.state)
         self.run_tab = RunSimulationTab(self.state)
         self.results_tab = ResultsTab(self.state)
 
-        self.tabs.addTab(self.setup_tab, "1. Project Setup")
-        self.tabs.addTab(self.input_tab, "2. Input Data")
-        self.tabs.addTab(self.parameters_tab, "3. Parameters")
-        self.tabs.addTab(self.run_tab, "4. Run Simulation")
-        self.tabs.addTab(self.results_tab, "5. Results & Analysis")
+        self.tabs.addTab(self.setup_tab, "Project Setup")
+        self.tabs.addTab(self.input_workspace_tab, "Input Data & Shapes")
+        self.tabs.addTab(self.parameters_tab, "Parameters")
+        self.tabs.addTab(self.run_tab, "Run Simulation")
+        self.tabs.addTab(self.results_tab, "Results & Analysis")
