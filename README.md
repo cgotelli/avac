@@ -34,6 +34,7 @@ sudo apt-get install -y git python3 python3-venv python3-pip gfortran make ninja
 Important:
 - Step B is a **system-level** install (inside your WSL distro), not a repository install.
 - If you delete/reclone the repository and restart from Step C, Step B is still required at least once in that distro.
+- Safe rule: whenever in doubt, rerun Step B. `apt-get install` is idempotent.
 
 ### Step C: Clone the repository
 
@@ -57,6 +58,13 @@ If the import command fails with missing shared libraries, rerun:
 ```bash
 sudo apt-get update
 sudo apt-get install -y libnspr4 libnss3
+```
+
+For a fully deterministic QtWebEngine runtime on Ubuntu 24.04, you can install the full set:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y libnspr4 libnss3 libxcb-dri3-0 libxcomposite1 libxdamage1 libxrandr2 libxtst6 libxkbfile1 libgbm1 libasound2
 ```
 
 ### Step E: Launch GUI
