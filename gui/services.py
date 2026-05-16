@@ -444,8 +444,9 @@ def check_environment(project_dir: Path) -> EnvironmentStatus:
             "PyQt6-WebEngine is unavailable. Install Python deps and Linux runtime libs:\n"
             "  pip install -r requirements-gui.txt\n"
             "  sudo apt-get install -y libnspr4 libnss3 libxcb-dri3-0 libxcomposite1 "
-            "libxdamage1 libxrandr2 libxtst6 libxkbfile1 libgbm1 libasound2"
+            "libxdamage1 libxrandr2 libxtst6 libxkbfile1 libgbm1 libasound2t64"
         )
+        status.notes.append("If libasound2t64 is unavailable, try libasound2 (Ubuntu 22.04).")
         if webengine_error:
             status.notes.append(f"PyQt6-WebEngine import error: {webengine_error}")
             package_hints = {
@@ -458,7 +459,7 @@ def check_environment(project_dir: Path) -> EnvironmentStatus:
                 "libXrandr.so": "libxrandr2",
                 "libXtst.so": "libxtst6",
                 "libgbm.so": "libgbm1",
-                "libasound.so": "libasound2",
+                "libasound.so": "libasound2t64",
             }
             suggested: set[str] = set()
             for needle, package in package_hints.items():

@@ -28,7 +28,7 @@ Open Ubuntu and run:
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y git python3 python3-venv python3-pip gfortran make ninja-build libgl1 libegl1 libxcb-cursor0 libnspr4 libnss3 libxcb-dri3-0 libxcomposite1 libxdamage1 libxrandr2 libxtst6 libxkbfile1 libgbm1 libasound2 ffmpeg
+sudo apt-get install -y git python3 python3-venv python3-pip gfortran make ninja-build libgl1 libegl1 libxcb-cursor0 libnspr4 libnss3 libxcb-dri3-0 libxcomposite1 libxdamage1 libxrandr2 libxtst6 libxkbfile1 libgbm1 libasound2t64 ffmpeg
 ```
 
 Important:
@@ -57,7 +57,7 @@ If the import command fails with missing shared libraries, rerun Step B:
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y git python3 python3-venv python3-pip gfortran make ninja-build libgl1 libegl1 libxcb-cursor0 libnspr4 libnss3 libxcb-dri3-0 libxcomposite1 libxdamage1 libxrandr2 libxtst6 libxkbfile1 libgbm1 libasound2 ffmpeg
+sudo apt-get install -y git python3 python3-venv python3-pip gfortran make ninja-build libgl1 libegl1 libxcb-cursor0 libnspr4 libnss3 libxcb-dri3-0 libxcomposite1 libxdamage1 libxrandr2 libxtst6 libxkbfile1 libgbm1 libasound2t64 ffmpeg
 ```
 
 ### Step E: Launch GUI
@@ -124,6 +124,15 @@ cd /path/to/avac
 source env/bin/activate
 python -c "from PyQt6.QtWebEngineWidgets import QWebEngineView; print('PyQt6-WebEngine OK')"
 ```
+
+If apt says `libasound2 has no installation candidate`:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y libasound2t64
+```
+
+(`libasound2t64` is the Ubuntu 24.04 package name.)
 
 If QtWebEngine/EGL fails:
 
