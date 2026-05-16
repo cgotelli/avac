@@ -19,7 +19,7 @@ In Windows PowerShell:
 wsl --install -d Ubuntu
 ```
 
-Reboot if Windows asks you to.
+Reboot if Windows asks you to. You can also install it from the [Windows Store](https://apps.microsoft.com/detail/9pdxgncfsczv?hl=en-US&gl=CH).
 
 ### Step B: Install system packages in Ubuntu
 
