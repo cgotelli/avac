@@ -31,6 +31,10 @@ sudo apt-get update
 sudo apt-get install -y git python3 python3-venv python3-pip gfortran make ninja-build libgl1 libegl1 libxcb-cursor0 libnspr4 libnss3 ffmpeg
 ```
 
+Important:
+- Step B is a **system-level** install (inside your WSL distro), not a repository install.
+- If you delete/reclone the repository and restart from Step C, Step B is still required at least once in that distro.
+
 ### Step C: Clone the repository
 
 ```bash
@@ -46,6 +50,13 @@ source env/bin/activate
 pip install --upgrade pip
 pip install -r requirements-gui.txt
 python -c "from PyQt6.QtWebEngineWidgets import QWebEngineView; print('PyQt6-WebEngine OK')"
+```
+
+If the import command fails with missing shared libraries, rerun:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y libnspr4 libnss3
 ```
 
 ### Step E: Launch GUI

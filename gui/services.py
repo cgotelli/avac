@@ -402,12 +402,14 @@ def build_local_claw_env(
 def check_environment(project_dir: Path) -> EnvironmentStatus:
     status = EnvironmentStatus()
     status.python_path = sys.executable
+    webengine_error = ""
     try:
         from PyQt6.QtWebEngineWidgets import QWebEngineView as _QWebEngineView  # noqa: F401
 
         status.webengine_ready = True
-    except Exception:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
         status.webengine_ready = False
+        webengine_error = str(exc)
 
     gfortran = shutil.which("gfortran")
     status.gfortran_found = bool(gfortran)
@@ -443,6 +445,8 @@ def check_environment(project_dir: Path) -> EnvironmentStatus:
             "  pip install -r requirements-gui.txt\n"
             "  sudo apt-get install -y libnspr4 libnss3"
         )
+        if webengine_error:
+            status.notes.append(f"PyQt6-WebEngine import error: {webengine_error}")
     return status
 
 
