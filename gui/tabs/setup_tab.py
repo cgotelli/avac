@@ -73,7 +73,7 @@ class ProjectSetupTab(QWidget):
 
         tips = QFrame()
         tips_layout = QVBoxLayout(tips)
-        tips_label = QLabel("Tips: use scripts/bootstrap_local_env.sh for a local environment and launch.bat on Windows/WSL.")
+        tips_label = QLabel("Tips: use scripts/bootstrap_local_env.sh to create the local GUI environment.")
         tips_label.setWordWrap(True)
         tips_layout.addWidget(tips_label)
 
