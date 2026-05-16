@@ -50,7 +50,6 @@ python3 -m venv env
 source env/bin/activate
 pip install --upgrade pip
 pip install -r requirements-gui.txt
-python -c "from PyQt6.QtWebEngineWidgets import QWebEngineView; print('PyQt6-WebEngine OK')"
 ```
 
 If the import command fails with missing shared libraries, rerun Step B:
