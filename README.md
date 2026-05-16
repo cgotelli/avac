@@ -28,7 +28,7 @@ Open Ubuntu and run:
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y git python3 python3-venv python3-pip gfortran make ninja-build libgl1 libegl1 libxcb-cursor0 libnspr4 libnss3 ffmpeg
+sudo apt-get install -y git python3 python3-venv python3-pip gfortran make ninja-build libgl1 libegl1 libxcb-cursor0 libnspr4 libnss3 libxcb-dri3-0 libxcomposite1 libxdamage1 libxrandr2 libxtst6 libxkbfile1 libgbm1 libasound2 ffmpeg
 ```
 
 Important:
@@ -53,18 +53,11 @@ pip install -r requirements-gui.txt
 python -c "from PyQt6.QtWebEngineWidgets import QWebEngineView; print('PyQt6-WebEngine OK')"
 ```
 
-If the import command fails with missing shared libraries, rerun:
+If the import command fails with missing shared libraries, rerun Step B:
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y libnspr4 libnss3
-```
-
-For a fully deterministic QtWebEngine runtime on Ubuntu 24.04, you can install the full set:
-
-```bash
-sudo apt-get update
-sudo apt-get install -y libnspr4 libnss3 libxcb-dri3-0 libxcomposite1 libxdamage1 libxrandr2 libxtst6 libxkbfile1 libgbm1 libasound2
+sudo apt-get install -y git python3 python3-venv python3-pip gfortran make ninja-build libgl1 libegl1 libxcb-cursor0 libnspr4 libnss3 libxcb-dri3-0 libxcomposite1 libxdamage1 libxrandr2 libxtst6 libxkbfile1 libgbm1 libasound2 ffmpeg
 ```
 
 ### Step E: Launch GUI
@@ -117,6 +110,16 @@ If you get `ImportError: libnspr4.so: cannot open shared object file`:
 ```bash
 sudo apt-get update
 sudo apt-get install -y libnspr4 libnss3
+cd /path/to/avac
+source env/bin/activate
+python -c "from PyQt6.QtWebEngineWidgets import QWebEngineView; print('PyQt6-WebEngine OK')"
+```
+
+If you get `ImportError: libxkbfile.so... cannot open shared object file`:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y libxkbfile1
 cd /path/to/avac
 source env/bin/activate
 python -c "from PyQt6.QtWebEngineWidgets import QWebEngineView; print('PyQt6-WebEngine OK')"

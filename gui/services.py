@@ -443,10 +443,31 @@ def check_environment(project_dir: Path) -> EnvironmentStatus:
         status.notes.append(
             "PyQt6-WebEngine is unavailable. Install Python deps and Linux runtime libs:\n"
             "  pip install -r requirements-gui.txt\n"
-            "  sudo apt-get install -y libnspr4 libnss3"
+            "  sudo apt-get install -y libnspr4 libnss3 libxcb-dri3-0 libxcomposite1 "
+            "libxdamage1 libxrandr2 libxtst6 libxkbfile1 libgbm1 libasound2"
         )
         if webengine_error:
             status.notes.append(f"PyQt6-WebEngine import error: {webengine_error}")
+            package_hints = {
+                "libnspr4.so": "libnspr4",
+                "libnss3.so": "libnss3",
+                "libxkbfile.so": "libxkbfile1",
+                "libxcb-dri3.so": "libxcb-dri3-0",
+                "libXcomposite.so": "libxcomposite1",
+                "libXdamage.so": "libxdamage1",
+                "libXrandr.so": "libxrandr2",
+                "libXtst.so": "libxtst6",
+                "libgbm.so": "libgbm1",
+                "libasound.so": "libasound2",
+            }
+            suggested: set[str] = set()
+            for needle, package in package_hints.items():
+                if needle in webengine_error:
+                    suggested.add(package)
+            if suggested:
+                status.notes.append(
+                    "Install missing runtime package(s): sudo apt-get install -y " + " ".join(sorted(suggested))
+                )
     return status
 
 
