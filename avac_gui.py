@@ -4,7 +4,9 @@
 import os
 import platform
 import re
+import shlex
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -209,6 +211,77 @@ def _maybe_print_wslg_restart_hint(config_paths: list[Path]) -> None:
     )
 
 
+def _ps_single_quote(value: str) -> str:
+    return "'" + str(value).replace("'", "''") + "'"
+
+
+def _launch_hidden_powershell(ps_command: str) -> bool:
+    candidates = [
+        "powershell.exe",
+        "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe",
+        "pwsh.exe",
+        "/mnt/c/Program Files/PowerShell/7/pwsh.exe",
+    ]
+    for exe in candidates:
+        try:
+            subprocess.Popen(
+                [exe, "-NoProfile", "-WindowStyle", "Hidden", "-Command", ps_command],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            return True
+        except OSError:
+            continue
+    return False
+
+
+def _schedule_wsl_relaunch_after_shutdown() -> bool:
+    distro = os.environ.get("WSL_DISTRO_NAME", "").strip()
+    cwd = os.getcwd()
+    entrypoint = str(Path(__file__).resolve())
+    python_executable = str(Path(sys.executable).resolve())
+
+    bash_cmd = (
+        f"cd {shlex.quote(cwd)} && "
+        f"AVAC_WSLG_RESTART_DONE=1 {shlex.quote(python_executable)} {shlex.quote(entrypoint)}"
+    )
+    if distro:
+        launch_cmd = (
+            f"& wsl.exe -d {_ps_single_quote(distro)} --cd {_ps_single_quote(cwd)} "
+            f"bash -lc {_ps_single_quote(bash_cmd)}"
+        )
+    else:
+        launch_cmd = f"& wsl.exe --cd {_ps_single_quote(cwd)} bash -lc {_ps_single_quote(bash_cmd)}"
+    ps_command = f"Start-Sleep -Seconds 2; {launch_cmd}"
+    return _launch_hidden_powershell(ps_command)
+
+
+def _shutdown_wsl_vm() -> bool:
+    commands = [
+        ["wsl.exe", "--shutdown"],
+        ["/mnt/c/Windows/System32/wsl.exe", "--shutdown"],
+        ["/mnt/c/Windows/Sysnative/wsl.exe", "--shutdown"],
+        ["powershell.exe", "-NoProfile", "-Command", "wsl --shutdown"],
+        ["cmd.exe", "/c", "wsl --shutdown"],
+    ]
+    for command in commands:
+        try:
+            proc = subprocess.run(
+                command,
+                check=False,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=10,
+            )
+        except OSError:
+            continue
+        except subprocess.TimeoutExpired:
+            continue
+        if proc.returncode == 0:
+            return True
+    return False
+
+
 def _try_configure_all_wslg_paths() -> tuple[bool, list[Path], list[Path]]:
     paths = _resolve_wslg_config_paths()
     wrote_paths: list[Path] = []
@@ -293,24 +366,34 @@ def _current_wslg_copy_warning_enabled() -> bool | None:
     return matches[-1] == "1"
 
 
-def ensure_wslg_title_defaults() -> None:
+def ensure_wslg_title_defaults() -> bool:
     """Apply portable WSLg title defaults per user profile.
 
     This is machine-agnostic: after cloning on a new PC, first GUI launch will
     write/update the user `.wslgconfig` automatically.
     """
     if os.environ.get("AVAC_DISABLE_WSLG_TITLE_FIX", "0") == "1":
-        return
+        return False
     if not _is_wsl_linux():
-        return
+        return False
     changed, config_paths, verified_paths = _try_configure_all_wslg_paths()
     if not config_paths:
-        return
+        return False
     if not verified_paths and not changed:
-        return
+        return False
     # WSLg reads config only at startup; tell users what to do once.
-    if _is_wslg_copy_warning_currently_on() is not False:
+    warning_on = _is_wslg_copy_warning_currently_on()
+    should_autorestart = bool(changed or verified_paths)
+    if warning_on is True and should_autorestart and os.environ.get("AVAC_DISABLE_WSLG_AUTORESTART", "0") != "1":
+        if os.environ.get("AVAC_WSLG_RESTART_DONE", "0") != "1":
+            relaunch_scheduled = _schedule_wsl_relaunch_after_shutdown()
+            if relaunch_scheduled:
+                shutdown_ok = _shutdown_wsl_vm()
+                if shutdown_ok:
+                    return True
+    if warning_on is not False:
         _maybe_print_wslg_restart_hint(verified_paths or config_paths)
+    return False
 
 
 def configure_qt_runtime() -> None:
@@ -343,7 +426,8 @@ def configure_qt_runtime() -> None:
 
 
 configure_qt_runtime()
-ensure_wslg_title_defaults()
+if ensure_wslg_title_defaults():
+    raise SystemExit(0)
 
 from gui.app import run
 
